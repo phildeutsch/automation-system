@@ -1,0 +1,71 @@
+{
+  "rules": [
+    {
+      "id": "spotty-invoice-processor",
+      "name": "Spotty PDF Invoice to Betriebskosten",
+      "description": "Process PDF invoices from Spotty and save to Betriebskosten database",
+      "enabled": false,
+      "trigger": {
+        "type": "email",
+        "source": "imap",
+        "conditions": {
+          "from": "*spotty*",
+          "subject_contains": [
+            "invoice",
+            "rechnung",
+            "bill",
+            "payment"
+          ],
+          "has_attachments": true,
+          "attachment_types": [
+            "pdf"
+          ]
+        }
+      },
+      "actions": [
+        {
+          "type": "extract_pdf",
+          "fields": [
+            "amount",
+            "date",
+            "invoice_number",
+            "vendor",
+            "description"
+          ],
+          "ai_extraction": true
+        },
+        {
+          "type": "save_to_notion",
+          "database": "betriebskosten",
+          "field_mapping": {
+            "Amount": "amount",
+            "Date": "date",
+            "Invoice Number": "invoice_number",
+            "Vendor": "vendor",
+            "Description": "description",
+            "PDF": "attachment_url"
+          }
+        },
+        {
+          "type": "archive_email",
+          "folder": "processed"
+        }
+      ],
+      "schedule": {
+        "type": "interval",
+        "minutes": 5
+      },
+      "notifications": {
+        "success": false,
+        "errors": true,
+        "channel": "slack:C0A8C0W1U5N"
+      }
+    }
+  ],
+  "global_settings": {
+    "max_concurrent_rules": 3,
+    "pdf_storage_path": "./data/pdfs",
+    "log_level": "info",
+    "retry_failed_after_minutes": 30
+  }
+}

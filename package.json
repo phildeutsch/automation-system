@@ -1,0 +1,32 @@
+{
+  "name": "email-automation-system",
+  "version": "1.0.0",
+  "description": "Automated email processing and Notion database integration",
+  "main": "src/automation-engine.js",
+  "scripts": {
+    "start": "node src/web-server.js",
+    "engine": "node src/automation-engine.js",
+    "dev": "nodemon src/web-server.js",
+    "test": "node test-system.js",
+    "test-email": "node test-system.js"
+  },
+  "keywords": [
+    "automation",
+    "email",
+    "notion",
+    "pdf",
+    "processing"
+  ],
+  "author": "Philipp Deutsch",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

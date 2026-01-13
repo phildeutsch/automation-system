@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Automation System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #7f8c8d;
+        }
+        
+        .actions {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        button.danger {
+            background: #e74c3c;
+        }
+        
+        button.danger:hover {
+            background: #c0392b;
+        }
+        
+        button.success {
+            background: #27ae60;
+        }
+        
+        button.success:hover {
+            background: #229954;
+        }
+        
+        .rules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+        
+        .rule-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid #3498db;
+        }
+        
+        .rule-card.disabled {
+            border-left-color: #95a5a6;
+            opacity: 0.7;
+        }
+        
+        .rule-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .rule-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            flex: 1;
+        }
+        
+        .rule-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .rule-status.enabled {
+            background: #d5edda;
+            color: #155724;
+        }
+        
+        .rule-status.disabled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .rule-description {
+            color: #7f8c8d;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+        
+        .rule-details {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .detail-row {
+            display: grid;
+            grid-template-columns: 100px 1fr;
+            gap: 10px;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: #34495e;
+        }
+        
+        .detail-value {
+            color: #7f8c8d;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        
+        .rule-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 50px auto;
+            padding: 20px;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 8px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal h2 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #34495e;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        
+        .close {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: #e74c3c;
+        }
+        
+        .status-bar {
+            background: #ecf0f1;
+            padding: 10px 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #27ae60;
+        }
+        
+        .status-indicator.error {
+            background: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Email Automation System</h1>
+            <p class="subtitle">Manage your email processing automations</p>
+        </header>
+        
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="status-indicator" id="systemStatus"></span>
+                <span>System Status: <span id="statusText">Loading...</span></span>
+            </div>
+            <div class="status-item">
+                <span>Rules: <span id="ruleCount">0</span></span>
+            </div>
+            <div class="status-item">
+                <span>Last Update: <span id="lastUpdate">Never</span></span>
+            </div>
+        </div>
+        
+        <div class="actions">
+            <button onclick="addRule()">Add New Rule</button>
+            <button onclick="reloadRules()" class="success">Reload Rules</button>
+            <button onclick="exportRules()">Export Config</button>
+        </div>
+        
+        <div id="rulesContainer" class="rules-grid">
+            <!-- Rules will be loaded here -->
+        </div>
+    </div>
+    
+    <!-- Rule Editor Modal -->
+    <div id="ruleModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Add New Rule</h2>
+            <form id="ruleForm" onsubmit="saveRule(event)">
+                <div class="form-group">
+                    <label for="ruleName">Rule Name</label>
+                    <input type="text" id="ruleName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="ruleDescription">Description</label>
+                    <textarea id="ruleDescription" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="emailFrom">Email From (use * for wildcard)</label>
+                    <input type="text" id="emailFrom" placeholder="example@domain.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="subjectKeywords">Subject Keywords (comma separated)</label>
+                    <input type="text" id="subjectKeywords" placeholder="invoice, bill, receipt">
+                </div>
+                
+                <div class="form-group">
+                    <label for="notionDatabase">Notion Database</label>
+                    <select id="notionDatabase">
+                        <option value="betriebskosten">Betriebskosten</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="scheduleMinutes">Run Every (minutes)</label>
+                    <input type="number" id="scheduleMinutes" value="5" min="1">
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="ruleEnabled" checked> Enabled
+                    </label>
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                    <button type="button" onclick="closeModal()">Cancel</button>
+                    <button type="submit">Save Rule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        let currentRules = [];
+        let editingRuleId = null;
+        
+        // Load rules on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadRules();
+        });
+        
+        async function loadRules() {
+            try {
+                const response = await fetch('/api/rules');
+                currentRules = await response.json();
+                renderRules();
+                updateStatus('Running', true);
+            } catch (error) {
+                console.error('Error loading rules:', error);
+                updateStatus('Error', false);
+            }
+        }
+        
+        function renderRules() {
+            const container = document.getElementById('rulesContainer');
+            container.innerHTML = '';
+            
+            currentRules.forEach(rule => {
+                const ruleCard = createRuleCard(rule);
+                container.appendChild(ruleCard);
+            });
+            
+            document.getElementById('ruleCount').textContent = currentRules.length;
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+        }
+        
+        function createRuleCard(rule) {
+            const card = document.createElement('div');
+            card.className = `rule-card ${rule.enabled ? '' : 'disabled'}`;
+            
+            card.innerHTML = `
+                <div class="rule-header">
+                    <div class="rule-name">${rule.name}</div>
+                    <div class="rule-status ${rule.enabled ? 'enabled' : 'disabled'}">
+                        ${rule.enabled ? 'Enabled' : 'Disabled'}
+                    </div>
+                </div>
+                <div class="rule-description">${rule.description}</div>
+                <div class="rule-details">
+                    <div class="detail-row">
+                        <div class="detail-label">Trigger:</div>
+                        <div class="detail-value">From: ${rule.trigger?.conditions?.from || 'Any'}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Schedule:</div>
+                        <div class="detail-value">Every ${rule.schedule?.minutes || 5} minutes</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Actions:</div>
+                        <div class="detail-value">${rule.actions?.length || 0} actions</div>
+                    </div>
+                </div>
+                <div class="rule-actions">
+                    <button onclick="editRule('${rule.id}')">Edit</button>
+                    <button onclick="toggleRule('${rule.id}')" class="${rule.enabled ? 'danger' : 'success'}">
+                        ${rule.enabled ? 'Disable' : 'Enable'}
+                    </button>
+                    <button onclick="testRule('${rule.id}')" class="success">Test</button>
+                    <button onclick="deleteRule('${rule.id}')" class="danger">Delete</button>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        function addRule() {
+            editingRuleId = null;
+            document.getElementById('modalTitle').textContent = 'Add New Rule';
+            document.getElementById('ruleForm').reset();
+            document.getElementById('ruleModal').style.display = 'block';
+        }
+        
+        function editRule(ruleId) {
+            const rule = currentRules.find(r => r.id === ruleId);
+            if (!rule) return;
+            
+            editingRuleId = ruleId;
+            document.getElementById('modalTitle').textContent = 'Edit Rule';
+            
+            // Populate form
+            document.getElementById('ruleName').value = rule.name;
+            document.getElementById('ruleDescription').value = rule.description;
+            document.getElementById('emailFrom').value = rule.trigger?.conditions?.from || '';
+            document.getElementById('subjectKeywords').value = rule.trigger?.conditions?.subject_contains?.join(', ') || '';
+            document.getElementById('scheduleMinutes').value = rule.schedule?.minutes || 5;
+            document.getElementById('ruleEnabled').checked = rule.enabled;
+            
+            document.getElementById('ruleModal').style.display = 'block';
+        }
+        
+        function closeModal() {
+            document.getElementById('ruleModal').style.display = 'none';
+            editingRuleId = null;
+        }
+        
+        async function saveRule(event) {
+            event.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('ruleName').value,
+                description: document.getElementById('ruleDescription').value,
+                enabled: document.getElementById('ruleEnabled').checked,
+                trigger: {
+                    type: 'email',
+                    source: 'imap',
+                    conditions: {
+                        from: document.getElementById('emailFrom').value,
+                        subject_contains: document.getElementById('subjectKeywords').value
+                            .split(',').map(s => s.trim()).filter(s => s),
+                        has_attachments: true,
+                        attachment_types: ['pdf']
+                    }
+                },
+                actions: [
+                    {
+                        type: 'extract_pdf',
+                        fields: ['amount', 'date', 'invoice_number', 'vendor', 'description'],
+                        ai_extraction: true
+                    },
+                    {
+                        type: 'save_to_notion',
+                        database: document.getElementById('notionDatabase').value,
+                        field_mapping: {
+                            'Amount': 'amount',
+                            'Date': 'date',
+                            'Invoice Number': 'invoice_number',
+                            'Vendor': 'vendor',
+                            'Description': 'description',
+                            'PDF': 'attachment_url'
+                        }
+                    },
+                    {
+                        type: 'archive_email',
+                        folder: 'processed'
+                    }
+                ],
+                schedule: {
+                    type: 'interval',
+                    minutes: parseInt(document.getElementById('scheduleMinutes').value)
+                },
+                notifications: {
+                    success: false,
+                    errors: true,
+                    channel: 'slack:C0A8C0W1U5N'
+                }
+            };
+            
+            try {
+                if (editingRuleId) {
+                    formData.id = editingRuleId;
+                    await fetch(`/api/rules/${editingRuleId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData)
+                    });
+                } else {
+                    formData.id = 'rule-' + Date.now();
+                    await fetch('/api/rules', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData)
+                    });
+                }
+                
+                closeModal();
+                await loadRules();
+            } catch (error) {
+                console.error('Error saving rule:', error);
+                alert('Error saving rule: ' + error.message);
+            }
+        }
+        
+        async function toggleRule(ruleId) {
+            const rule = currentRules.find(r => r.id === ruleId);
+            if (!rule) return;
+            
+            try {
+                await fetch(`/api/rules/${ruleId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled: !rule.enabled })
+                });
+                
+                await loadRules();
+            } catch (error) {
+                console.error('Error toggling rule:', error);
+                alert('Error toggling rule: ' + error.message);
+            }
+        }
+        
+        async function deleteRule(ruleId) {
+            if (!confirm('Are you sure you want to delete this rule?')) return;
+            
+            try {
+                await fetch(`/api/rules/${ruleId}`, { method: 'DELETE' });
+                await loadRules();
+            } catch (error) {
+                console.error('Error deleting rule:', error);
+                alert('Error deleting rule: ' + error.message);
+            }
+        }
+        
+        async function testRule(ruleId) {
+            try {
+                const response = await fetch(`/api/rules/${ruleId}/test`, { method: 'POST' });
+                const result = await response.json();
+                alert(`Test result: ${result.message}`);
+            } catch (error) {
+                console.error('Error testing rule:', error);
+                alert('Error testing rule: ' + error.message);
+            }
+        }
+        
+        async function reloadRules() {
+            try {
+                await fetch('/api/reload', { method: 'POST' });
+                await loadRules();
+            } catch (error) {
+                console.error('Error reloading rules:', error);
+                alert('Error reloading rules: ' + error.message);
+            }
+        }
+        
+        function exportRules() {
+            const dataStr = JSON.stringify(currentRules, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'automation-rules.json';
+            link.click();
+        }
+        
+        function updateStatus(status, isRunning) {
+            document.getElementById('statusText').textContent = status;
+            const indicator = document.getElementById('systemStatus');
+            indicator.className = 'status-indicator' + (isRunning ? '' : ' error');
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('ruleModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>
