@@ -1,9 +1,21 @@
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const { promisify } = require('util');
 const path = require('path');
 const fs = require('fs').promises;
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
+
+// Safe shell argument escaping
+function shellEscape(arg) {
+    if (typeof arg !== 'string') {
+        arg = String(arg);
+    }
+    // Only allow alphanumeric, dash, underscore, dot, and @
+    if (!/^[a-zA-Z0-9._@-]+$/.test(arg)) {
+        throw new Error(`Invalid argument: ${arg}`);
+    }
+    return arg;
+}
 
 class EmailProcessor {
     constructor() {
@@ -34,7 +46,7 @@ class EmailProcessor {
         
         try {
             // Use existing ProtonMail connection via Himalaya CLI
-            const { stdout } = await execAsync('himalaya envelope list --output json --page-size 50');
+            const { stdout } = await execFileAsync('himalaya', ['envelope', 'list', '--output', 'json', '--page-size', '50']);
             const emails = JSON.parse(stdout);
             
             const matches = [];
@@ -109,14 +121,16 @@ class EmailProcessor {
 
     async getEmailContent(emailId) {
         try {
+            const safeEmailId = shellEscape(emailId);
+
             // Get email content
-            const { stdout: contentStdout } = await execAsync(`himalaya message read ${emailId}`);
+            const { stdout: contentStdout } = await execFileAsync('himalaya', ['message', 'read', safeEmailId]);
             const emailData = { body: contentStdout };
-            
+
             // Get attachments if any
             let attachments = [];
             try {
-                const { stdout: attachStdout } = await execAsync(`himalaya attachment list ${emailId} --output json`);
+                const { stdout: attachStdout } = await execFileAsync('himalaya', ['attachment', 'list', safeEmailId, '--output', 'json']);
                 const attachList = JSON.parse(attachStdout);
                 
                 // Convert to expected format
@@ -153,8 +167,11 @@ class EmailProcessor {
     async archiveEmail(action, context) {
         try {
             const folder = action.folder || 'Archive';
-            await execAsync(`himalaya message move ${context.email.id} "${folder}"`);
-            
+            const safeEmailId = shellEscape(context.email.id);
+            const safeFolder = shellEscape(folder);
+
+            await execFileAsync('himalaya', ['message', 'move', safeEmailId, safeFolder]);
+
             console.log(`Archived email ${context.email.id} to ${folder}`);
             return { archived: true };
         } catch (error) {
@@ -167,10 +184,12 @@ class EmailProcessor {
     async downloadAttachment(emailId, attachmentId, savePath) {
         try {
             await fs.mkdir(path.dirname(savePath), { recursive: true });
-            // Download all attachments to the directory, then move the specific one
+            const safeEmailId = shellEscape(emailId);
             const downloadDir = path.dirname(savePath);
-            await execAsync(`himalaya attachment download ${emailId} --dir "${downloadDir}"`);
-            
+
+            // Download all attachments to the directory
+            await execFileAsync('himalaya', ['attachment', 'download', safeEmailId, '--dir', downloadDir]);
+
             // Find the downloaded file and rename it to our expected path
             // This is a simplified approach - might need refinement based on actual attachment names
             return savePath;

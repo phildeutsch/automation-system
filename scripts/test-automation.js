@@ -98,8 +98,8 @@ async function testAutomation() {
 // Run test if called directly
 if (require.main === module) {
     // Load environment variables
-    require('dotenv').config({ path: path.join(__dirname, '../.env') });
-    
+    require('dotenv').config();
+
     testAutomation().catch(console.error);
 }
 

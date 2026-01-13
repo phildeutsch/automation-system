@@ -120,18 +120,26 @@ class NotionProcessor {
 
     async createNotionPage(pageData) {
         try {
-            // Check if Notion skill is available
-            const skillPath = '/home/clawdbot/.nvm/versions/node/v24.12.0/lib/node_modules/clawdbot/skills/notion/create-page.js';
-            
-            try {
-                await fs.access(skillPath);
-                // Use Notion skill
-                const { stdout } = await execAsync(`node "${skillPath}" '${JSON.stringify(pageData)}'`);
-                return JSON.parse(stdout);
-            } catch (error) {
-                // Notion skill not available, use direct API call
-                return await this.directNotionAPI(pageData);
+            // Check if Notion skill is available via environment variable
+            const skillPath = process.env.NOTION_SKILL_PATH;
+
+            if (skillPath) {
+                try {
+                    await fs.access(skillPath);
+                    // Use Notion skill via execFile for safety
+                    const { execFile } = require('child_process');
+                    const { promisify } = require('util');
+                    const execFileAsync = promisify(execFile);
+
+                    const { stdout } = await execFileAsync('node', [skillPath, JSON.stringify(pageData)]);
+                    return JSON.parse(stdout);
+                } catch (error) {
+                    console.log('Notion skill not available, using direct API');
+                }
             }
+
+            // Use direct API call
+            return await this.directNotionAPI(pageData);
         } catch (error) {
             console.error('Error creating Notion page:', error.message);
             throw error;

@@ -1,9 +1,9 @@
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const { promisify } = require('util');
 const path = require('path');
 const fs = require('fs').promises;
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 class PDFProcessor {
     constructor() {
@@ -67,9 +67,18 @@ class PDFProcessor {
 
     async extractTextFromPDF(pdfPath) {
         try {
+            // Validate pdfPath is within expected directory to prevent path traversal
+            const resolvedPath = path.resolve(pdfPath);
+            const dataDir = path.resolve(path.join(__dirname, '../../data'));
+            const tmpDir = '/tmp';
+
+            if (!resolvedPath.startsWith(dataDir) && !resolvedPath.startsWith(tmpDir)) {
+                throw new Error('Invalid PDF path - must be within data or tmp directory');
+            }
+
             // Use pdftotext if available, fallback to basic methods
             try {
-                const { stdout } = await execAsync(`pdftotext "${pdfPath}" -`);
+                const { stdout } = await execFileAsync('pdftotext', [resolvedPath, '-']);
                 return stdout;
             } catch (error) {
                 console.warn('pdftotext not available, trying alternative...');

@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+require('dotenv').config();
+
 const express = require('express');
 const path = require('path');
 const fs = require('fs').promises;
@@ -10,14 +12,38 @@ class WebServer {
         this.app = express();
         this.engine = new AutomationEngine();
         this.port = process.env.PORT || 3000;
+        this.host = process.env.HOST || '127.0.0.1'; // Default to localhost only
+        this.apiToken = process.env.API_TOKEN || null;
         this.configPath = path.join(__dirname, '../config/automation-rules.json');
-        
+
         this.setupMiddleware();
         this.setupRoutes();
     }
 
     setupMiddleware() {
         this.app.use(express.json());
+
+        // API authentication middleware
+        this.app.use('/api', (req, res, next) => {
+            // Skip auth if no token is configured (development mode)
+            if (!this.apiToken) {
+                console.warn('Warning: API_TOKEN not set - API is unprotected');
+                return next();
+            }
+
+            const authHeader = req.headers.authorization;
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return res.status(401).json({ error: 'Missing or invalid authorization header' });
+            }
+
+            const token = authHeader.substring(7);
+            if (token !== this.apiToken) {
+                return res.status(403).json({ error: 'Invalid API token' });
+            }
+
+            next();
+        });
+
         this.app.use(express.static(path.join(__dirname, '../web')));
     }
 
@@ -182,10 +208,18 @@ class WebServer {
     async start() {
         // Start the automation engine
         await this.engine.start();
-        
-        // Start the web server
-        this.app.listen(this.port, () => {
-            console.log(`Web server running at http://localhost:${this.port}`);
+
+        // Start the web server (bound to specific host for security)
+        this.app.listen(this.port, this.host, () => {
+            console.log(`Web server running at http://${this.host}:${this.port}`);
+            if (this.host === '127.0.0.1' || this.host === 'localhost') {
+                console.log('Server is bound to localhost only (secure)');
+            } else {
+                console.warn('Warning: Server is accessible from network - ensure API_TOKEN is set');
+            }
+            if (!this.apiToken) {
+                console.warn('Warning: API_TOKEN not set - set it in .env for production use');
+            }
             console.log('Automation system ready!');
         });
     }
